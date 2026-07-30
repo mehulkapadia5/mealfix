@@ -1,0 +1,2 @@
+insert into food_logs (id,user_id,meal_type,total_calories,total_protein,total_carbs,total_fat,total_fiber,notes,source) values ('00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000001','breakfast',350,28,20,18,4,'3 eggs and 2 protein bread','seed');
+insert into food_items (food_log_id,food_name,quantity,unit,calories,protein,carbs,fat,fiber) values ('00000000-0000-0000-0000-000000000101','eggs',3,'count',210,18,0,15,0),('00000000-0000-0000-0000-000000000101','protein bread',2,'slice',140,10,20,3,4);
