@@ -1,0 +1,23 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { createDb } from '../db/client.js';
+import { createSupabase } from '../lib/supabase.js';
+import { instrument } from '../lib/logger.js';
+import * as v from '../validation/schemas.js';
+import { FoodService } from '../services/food.js';
+import { WorkoutService } from '../services/workout.js';
+import { SleepService, WeightService } from '../services/health.js';
+import { AttachmentService } from '../services/attachment.js';
+import { SummaryService } from '../services/summary.js';
+import { LogAdminService } from '../services/logAdmin.js';
+export function registerTools(server: McpServer) { const db = createDb(); const food = new FoodService(db), workout = new WorkoutService(db), sleep = new SleepService(db), weight = new WeightService(db), summary = new SummaryService(db), admin = new LogAdminService(db); const attach = () => new AttachmentService(db, createSupabase()); const wrap = (data: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] });
+ server.tool('log_food','Create a food log and child food items.', v.logFood.shape, async i => wrap(await instrument('log_food',()=>food.logFood(v.logFood.parse(i)))));
+ server.tool('log_strength_workout','Create a gym workout with exercises and sets.', v.logStrengthWorkout.shape, async i => wrap(await instrument('log_strength_workout',()=>workout.logStrengthWorkout(v.logStrengthWorkout.parse(i)))));
+ server.tool('log_cardio','Create a cardio workout session and metrics.', v.logCardio.shape, async i => wrap(await instrument('log_cardio',()=>workout.logCardio(v.logCardio.parse(i)))));
+ server.tool('log_sleep','Create a sleep log.', v.logSleep.shape, async i => wrap(await instrument('log_sleep',()=>sleep.logSleep(v.logSleep.parse(i)))));
+ server.tool('log_weight','Create a weight log.', v.logWeight.shape, async i => wrap(await instrument('log_weight',()=>weight.logWeight(v.logWeight.parse(i)))));
+ server.tool('upload_attachment','Upload an image to Supabase Storage.', v.uploadAttachment.shape, async i => wrap(await instrument('upload_attachment',()=>attach().uploadAttachment(v.uploadAttachment.parse(i)))));
+ server.tool('attach_image','Link an uploaded image to an existing record.', v.attachImage.shape, async i => wrap(await instrument('attach_image',()=>attach().attachImage(v.attachImage.parse(i)))));
+ server.tool('get_today_summary','Return today nutrition, workout, sleep, and weight totals.', v.todaySummary.shape, async i => { const p=v.todaySummary.parse(i); return wrap(await instrument('get_today_summary',async()=>({ ...(await summary.getTodaySummary(p.userId)), rowsInserted:0 }))); });
+ server.tool('get_recent_logs','Return recent logs by type.', v.recentLogs.shape, async i => { const p=v.recentLogs.parse(i); return wrap(await instrument('get_recent_logs',async()=>({ logs: await summary.getRecentLogs(p.userId,p.type,p.limit), rowsInserted:0 }))); });
+ server.tool('update_log','Update a supported log table by id.', v.updateLog.shape, async i => { const p=v.updateLog.parse(i); return wrap(await instrument('update_log',()=>admin.updateLog(p.table,p.id,p.patch))); });
+ server.tool('delete_log','Soft-delete a supported log table by id.', v.deleteLog.shape, async i => { const p=v.deleteLog.parse(i); return wrap(await instrument('delete_log',()=>admin.deleteLog(p.table,p.id))); }); }

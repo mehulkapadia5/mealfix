@@ -1,0 +1,5 @@
+import { eq, sql } from 'drizzle-orm';
+import { cardioSessions, foodItems, foodLogs, sleepLogs, strengthExercises, strengthSets, weightLogs, workoutSessions } from '../db/schema.js';
+import type { Db } from '../db/client.js';
+const tables = { food_logs: foodLogs, food_items: foodItems, workout_sessions: workoutSessions, strength_exercises: strengthExercises, strength_sets: strengthSets, cardio_sessions: cardioSessions, sleep_logs: sleepLogs, weight_logs: weightLogs } as const;
+export class LogAdminService { constructor(private db: Db) {} async updateLog(table: keyof typeof tables, id: string, patch: Record<string, unknown>) { const t = tables[table] as any; const [row] = await this.db.update(t).set({ ...patch, updatedAt: sql`now()` }).where(eq(t.id, id)).returning({ id: t.id }); return { id: row?.id, rowsInserted: 0 }; } async deleteLog(table: keyof typeof tables, id: string) { const t = tables[table] as any; const [row] = await this.db.update(t).set({ deletedAt: sql`now()` }).where(eq(t.id, id)).returning({ id: t.id }); return { id: row?.id, rowsInserted: 0 }; } }
